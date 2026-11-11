@@ -212,8 +212,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="small text-muted fw-bold">Foto Bukti / Kunjungan</label>
+                            <label class="small text-muted fw-bold">Tambah Foto Bukti / Kunjungan</label>
                             <input type="file" id="modalFoto" class="form-control form-control-sm" accept="image/*" capture="environment">
+                            <div class="form-text text-success fw-bold small mt-1" id="photoCounterText">Belum ada foto dipilih. (Bisa upload lebih dari 1 foto)</div>
                         </div>
                     </form>
                 </div>
@@ -228,7 +229,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // PENDAFTARAN SERVICE WORKER UNTUK MODE OFFLINE
+        // Pendaftaran Service Worker untuk Mode Offline
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
@@ -237,10 +238,12 @@
             });
         }
 
+        // Link Deploy Apps Script API Kamu
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0mA5GGiqeHchhRXinFJcEYaVDwtaZHAtKNb_R63XwioVLfLP8ZCjGUImNB360azp4/exec";
         
         let datasetBLL = [];
         let currentAngsuranWajib = 0;
+        let uploadedPhotosQueue = []; // Array penampung banyak foto
 
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
@@ -258,6 +261,24 @@
         document.addEventListener("DOMContentLoaded", function() {
             updateOnlineStatus();
             loadDataLocalDB();
+
+            // Listener untuk multi-upload foto
+            document.getElementById('modalFoto').addEventListener('change', function(e) {
+                let files = e.target.files;
+                for (let i = 0; i < files.length; i++) {
+                    let file = files[i];
+                    let reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedPhotosQueue.push({
+                            base64: event.target.result,
+                            type: file.type
+                        });
+                        document.getElementById('photoCounterTextinnerText').innerText = `${uploadedPhotosQueue.length} foto siap diunggah.`;
+                        document.getElementById('photoCounterText').innerText = `${uploadedPhotosQueue.length} foto berhasil ditambahkan.`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         });
 
         function loadDataLocalDB() {
@@ -394,6 +415,10 @@
             if(!item) return;
 
             currentAngsuranWajib = Number(item['Nominal Angsuran'] || 0);
+            uploadedPhotosQueue = []; // Reset antrean foto saat buka modal baru
+            document.getElementById('photoCounterText').innerText = 'Belum ada foto dipilih.';
+            document.getElementById('modalFoto').value = '';
+
             document.getElementById('modalLoanId').value = item['Loan Id'];
             document.getElementById('modalNamaMitra').innerText = item['Mitra Name'];
             document.getElementById('modalInfoMajelis').innerText = `Branch: ${item.Branch} | BP: ${item['Bp Name']} | Majelis: ${item['Majelis Name']}`;
@@ -405,7 +430,6 @@
             document.getElementById('modalStatusPembayaran').value = item['Status Pembayaran'] || 'Belum Bayar';
             document.getElementById('modalJanjiBayar').value = item['Janji Bayar'] || '';
             document.getElementById('modalKeterangan').value = item['Keterangan'] || '';
-            document.getElementById('modalFoto').value = '';
 
             toggleJanjiBayar();
             new bootstrap.Modal(document.getElementById('verifModal')).show();
@@ -442,7 +466,6 @@
 
         function saveVerifikasi() {
             let loanId = document.getElementById('modalLoanId').value;
-            let fileInput = document.getElementById('modalFoto');
             let payload = {
                 loanId: loanId,
                 identifikasiMitra: document.getElementById('modalIdentifikasi').value,
@@ -450,7 +473,8 @@
                 statusPembayaran: document.getElementById('modalStatusPembayaran').value,
                 janjiBayar: document.getElementById('modalJanjiBayar').value,
                 nominalBayar: document.getElementById('modalNominalBayar').value.replace(/\./g, ''),
-                keterangan: document.getElementById('modalKeterangan').value
+                keterangan: document.getElementById('modalKeterangan').value,
+                images: uploadedPhotosQueue // Kirim seluruh array foto
             };
 
             let item = datasetBLL.find(i => String(i['Loan Id']) === String(loanId));
@@ -464,20 +488,6 @@
             }
             localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL));
 
-            if (fileInput.files && fileInput.files[0]) {
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    payload.imagebase64 = e.target.result;
-                    payload.imageType = fileInput.files[0].type;
-                    processSaveAction(payload);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                processSaveAction(payload);
-            }
-        }
-
-        function processSaveAction(payload) {
             bootstrap.Modal.getInstance(document.getElementById('verifModal')).hide();
             filterDataPage1();
             renderAnalytics();
@@ -485,6 +495,8 @@
             let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
             queue.push(payload);
             localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
+            
+            uploadedPhotosQueue = []; // Reset antrean
             syncPendingData();
         }
 
@@ -493,13 +505,20 @@
             let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
             if (queue.length === 0) return;
 
-            let p = queue.shift();
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(p) })
-                .then(res => res.json())
-                .then(() => {
+            let p = queue[0]; // Ambil data teratas tanpa langsung hapus untuk keamanan
+            fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(p) 
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    queue.shift(); // Hapus dari antrean jika sukses
                     localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
                     if(queue.length > 0) syncPendingData();
-                }).catch(err => console.log("Menunggu sinkronisasi jaringan..."));
+                }
+            })
+            .catch(err => console.log("Menunggu sinkronisasi jaringan..."));
         }
 
         function renderAnalytics() {
