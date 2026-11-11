@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* MOBILE FIRST DESIGN */
         body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; padding-top: 60px; padding-bottom: 70px; }
         
         /* Top App Bar */
@@ -27,17 +26,19 @@
         .nav-item i { font-size: 1.3rem; display: block; margin-bottom: 4px; }
         .nav-item.active { color: #0d6efd; font-weight: bold; }
         
-        /* Card Layout untuk Mitra (Bukan Tabel) */
+        /* Card Layout */
         .mitra-card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
-        .mitra-card .mitra-name { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+        .mitra-card .mitra-name { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
         .mitra-card .mitra-majelis { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
-        .mitra-card .badge-status { font-size: 0.75rem; padding: 5px 8px; border-radius: 6px; }
+        .badge-status { font-size: 0.75rem; padding: 5px 8px; border-radius: 6px; }
         
         /* Filter Container */
         .filter-container { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         
         .page-section { display: none; padding: 15px; }
         .page-section.active { display: block; }
+        
+        .stat-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
     </style>
 </head>
 <body>
@@ -47,28 +48,42 @@
         <h5><i class="fas fa-leaf me-2"></i>BLL Barito</h5>
         <div>
             <span id="connectionIcon"><i class="fas fa-wifi text-light"></i></span>
-            <button class="btn btn-light btn-sm ms-2 rounded-circle" onclick="syncPendingData()" style="width: 32px; height: 32px; padding: 0;">
+            <button class="btn btn-light btn-sm ms-2 rounded-circle shadow-sm" onclick="syncPendingData()" style="width: 32px; height: 32px; padding: 0;">
                 <i class="fas fa-sync-alt text-primary"></i>
             </button>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT: BERANDA -->
     <div id="page1" class="page-section active">
-        <!-- Pencarian & Filter Mobile -->
+        <!-- Filter Berurutan: Branch -> BP -> Majelis -> Status BLL -->
         <div class="filter-container">
-            <div class="input-group input-group-lg mb-2">
+            <div class="input-group mb-2">
                 <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
                 <input type="text" id="fSearchMitra" class="form-control border-start-0 ps-0" placeholder="Cari Nama Mitra..." onkeyup="filterDataPage1()" style="font-size: 0.95rem;">
             </div>
             <div class="row g-2">
                 <div class="col-6">
-                    <select id="fBp1" class="form-select form-select-sm bg-light" onchange="filterDataPage1()">
-                        <option value="">Semua BP</option>
+                    <label class="form-label text-muted small fw-bold mb-1">Branch</label>
+                    <select id="fBranch" class="form-select form-select-sm bg-light" onchange="onBranchChange()">
+                        <option value="">Semua Branch</option>
                     </select>
                 </div>
                 <div class="col-6">
-                    <select id="fStatusBll1" class="form-select form-select-sm bg-light" onchange="filterDataPage1()">
+                    <label class="form-label text-muted small fw-bold mb-1">BP (Petugas)</label>
+                    <select id="fBp" class="form-select form-select-sm bg-light" onchange="filterDataPage1()">
+                        <option value="">Semua BP</option>
+                    </select>
+                </div>
+                <div class="col-6 mt-2">
+                    <label class="form-label text-muted small fw-bold mb-1">Majelis</label>
+                    <select id="fMajelis" class="form-select form-select-sm bg-light" onchange="filterDataPage1()">
+                        <option value="">Semua Majelis</option>
+                    </select>
+                </div>
+                <div class="col-6 mt-2">
+                    <label class="form-label text-muted small fw-bold mb-1">Status BLL</label>
+                    <select id="fStatusBll" class="form-select form-select-sm bg-light" onchange="filterDataPage1()">
                         <option value="">Semua Status</option>
                         <option value="SUDAH BLL">Sudah BLL</option>
                         <option value="BELUM BLL">Belum BLL</option>
@@ -78,21 +93,18 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-3 px-1">
-            <span class="fw-bold text-secondary small">Daftar Mitra</span>
+            <span class="fw-bold text-secondary small">Daftar Mitra & Verifikasi</span>
             <span class="badge bg-primary rounded-pill" id="countMitraBadge">0</span>
         </div>
 
-        <!-- Wadah List Card Mitra -->
-        <div id="listMitraContainer">
-            <!-- Data dimuat via JS -->
-        </div>
+        <div id="listMitraContainer"></div>
     </div>
 
-    <!-- PAGE 2: STATISTIK -->
+    <!-- MAIN CONTENT: STATISTIK -->
     <div id="page2" class="page-section">
-        <h6 class="fw-bold text-secondary mb-3">Statistik Pencapaian Barito</h6>
+        <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-chart-bar me-1"></i> Ringkasan Performa BLL</h6>
         
-        <div class="row g-2 mb-4">
+        <div class="row g-2 mb-3">
             <div class="col-6">
                 <div class="mitra-card bg-primary text-white text-center p-3">
                     <div class="small text-white-50">Total Mitra</div>
@@ -113,14 +125,19 @@
             </div>
             <div class="col-6">
                 <div class="mitra-card bg-info text-white text-center p-3">
-                    <div class="small text-white-50">Nyicil</div>
+                    <div class="small text-white-50">Nyicil (Parsial)</div>
                     <h3 id="statParsial" class="mb-0 fw-bold">0</h3>
                 </div>
             </div>
         </div>
         
-        <h6 class="fw-bold text-secondary mb-2">Performa BP</h6>
-        <div id="listBpAnalytics"></div>
+        <!-- Statistik 1: Progres per BP (Persentase) -->
+        <h6 class="fw-bold text-secondary mt-4 mb-2"><i class="fas fa-user-tie me-1"></i> Progres BLL per BP (%)</h6>
+        <div id="listBpAnalytics" class="mb-4"></div>
+
+        <!-- Statistik 2: Progres per Majelis (Dua Bar: Sudah & Belum BLL) -->
+        <h6 class="fw-bold text-secondary mt-4 mb-2"><i class="fas fa-users me-1"></i> Performa Majelis (Sudah vs Belum BLL)</h6>
+        <div id="listMajelisAnalytics" class="mb-4"></div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -133,19 +150,19 @@
         </a>
     </div>
 
-    <!-- Modal Form Verifikasi Mitra (Mobile Optimized) -->
+    <!-- Modal Form Verifikasi Mitra -->
     <div class="modal fade" id="verifModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
             <div class="modal-content border-0">
                 <div class="modal-header bg-light">
-                    <h6 class="modal-title fw-bold text-primary">Verifikasi BLL</h6>
+                    <h6 class="modal-title fw-bold text-primary">Verifikasi & Akumulasi BLL</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formVerifMitra">
                         <input type="hidden" id="modalLoanId">
                         
-                        <div class="text-center mb-3">
+                        <div class="text-center mb-3 bg-light p-3 rounded">
                             <h5 id="modalNamaMitra" class="fw-bold text-dark mb-0"></h5>
                             <div class="small text-muted" id="modalInfoMajelis"></div>
                             <div class="mt-2 text-warning fw-bold bg-warning bg-opacity-10 py-1 px-3 rounded-pill d-inline-block">
@@ -155,16 +172,16 @@
 
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="small text-muted">Identifikasi</label>
-                                <select id="modalIdentifikasi" class="form-select" required>
+                                <label class="small text-muted fw-bold">Identifikasi</label>
+                                <select id="modalIdentifikasi" class="form-select form-select-sm" required>
                                     <option value="">Pilih...</option>
                                     <option value="Modal">Modal</option>
                                     <option value="GL">GL</option>
                                 </select>
                             </div>
                             <div class="col-6">
-                                <label class="small text-muted">Bertemu?</label>
-                                <select id="modalBertemu" class="form-select" required>
+                                <label class="small text-muted fw-bold">Bertemu?</label>
+                                <select id="modalBertemu" class="form-select form-select-sm" required>
                                     <option value="">Pilih...</option>
                                     <option value="Ya">Ya</option>
                                     <option value="Tidak">Tidak</option>
@@ -173,28 +190,33 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="small text-muted">Nominal Bayar (Rp)</label>
+                            <label class="small text-muted fw-bold">Nominal Bayar (Rp)</label>
                             <input type="tel" id="modalNominalBayar" class="form-control form-control-lg fw-bold text-primary" placeholder="0" oninput="hitungOtomatisStatus(this)">
                         </div>
 
                         <div class="mb-3">
-                            <label class="small text-muted">Status Pembayaran</label>
-                            <input type="text" id="modalStatusPembayaran" class="form-control bg-light fw-bold" readonly value="Belum Bayar">
+                            <label class="small text-muted fw-bold">Status Pembayaran (Otomatis)</label>
+                            <input type="text" id="modalStatusPembayaran" class="form-control form-control-sm bg-light fw-bold text-success" readonly value="Belum Bayar">
                         </div>
 
                         <div class="mb-3" id="containerJanjiBayar" style="display: none;">
                             <label class="small text-danger fw-bold">Tgl Janji Bayar</label>
-                            <input type="date" id="modalJanjiBayar" class="form-control">
+                            <input type="date" id="modalJanjiBayar" class="form-control form-control-sm">
                         </div>
 
                         <div class="mb-3">
-                            <label class="small text-muted">Foto Kunjungan (Kamera)</label>
-                            <input type="file" id="modalFoto" class="form-control" accept="image/*" capture="environment">
+                            <label class="small text-muted fw-bold">Keterangan</label>
+                            <textarea id="modalKeterangan" class="form-control form-control-sm" rows="2" placeholder="Catatan lapangan..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">Foto Bukti / Kunjungan</label>
+                            <input type="file" id="modalFoto" class="form-control form-control-sm" accept="image/*" capture="environment">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer p-2">
-                    <button type="button" class="btn btn-primary w-100 btn-lg rounded-pill" onclick="saveVerifikasi()">Simpan Data</button>
+                    <button type="button" class="btn btn-primary w-100 btn-sm rounded-pill py-2" onclick="saveVerifikasi()">Simpan & Update Data</button>
                 </div>
             </div>
         </div>
@@ -225,13 +247,13 @@
             loadDataLocalDB();
         });
 
-        // Simulasi Local Database Kecepatan Tinggi
         function loadDataLocalDB() {
             let cached = localStorage.getItem('bll_dataset_cache');
             if (cached) {
                 datasetBLL = JSON.parse(cached);
-                initApp();
-                // Tetap fetch background tanpa mengganggu layar
+                initDropdowns();
+                filterDataPage1();
+                renderAnalytics();
                 if (navigator.onLine) fetchServerBackground();
             } else {
                 if (navigator.onLine) {
@@ -249,20 +271,42 @@
                     if(res.status === "success") {
                         datasetBLL = res.data;
                         localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL));
-                        initApp();
+                        initDropdowns();
+                        filterDataPage1();
+                        renderAnalytics();
                     }
                 });
         }
 
-        function initApp() {
-            let bpSet = new Set();
-            datasetBLL.forEach(item => { if(item['Bp Name']) bpSet.add(item['Bp Name']); });
+        function initDropdowns() {
+            let branchSet = new Set();
+            datasetBLL.forEach(item => { if(item.Branch) branchSet.add(item.Branch); });
+            let branchBuffer = ['<option value="">Semua Branch</option>'];
+            branchSet.forEach(b => branchBuffer.push(`<option value="${b}">${b}</option>`));
+            document.getElementById('fBranch').innerHTML = branchBuffer.join('');
+            
+            onBranchChange();
+        }
+
+        function onBranchChange() {
+            let selectedBranch = document.getElementById('fBranch').value;
+            let filtered = selectedBranch ? datasetBLL.filter(i => i.Branch === selectedBranch) : datasetBLL;
+            
+            let bpSet = new Set(), majelisSet = new Set();
+            filtered.forEach(item => {
+                if(item['Bp Name']) bpSet.add(item['Bp Name']);
+                if(item['Majelis Name']) majelisSet.add(item['Majelis Name']);
+            });
+
             let bpBuffer = ['<option value="">Semua BP</option>'];
             bpSet.forEach(b => bpBuffer.push(`<option value="${b}">${b}</option>`));
-            document.getElementById('fBp1').innerHTML = bpBuffer.join('');
+            document.getElementById('fBp').innerHTML = bpBuffer.join('');
+
+            let majelisBuffer = ['<option value="">Semua Majelis</option>'];
+            majelisSet.forEach(m => majelisBuffer.push(`<option value="${m}">${m}</option>`));
+            document.getElementById('fMajelis').innerHTML = majelisBuffer.join('');
 
             filterDataPage1();
-            renderAnalytics();
         }
 
         function switchPage(pageId, element) {
@@ -270,20 +314,27 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             element.classList.add('active');
+            if(pageId === 'page2') renderAnalytics();
         }
 
         function filterDataPage1() {
-            let bp = document.getElementById('fBp1').value;
-            let statusBll = document.getElementById('fStatusBll1').value;
+            let branch = document.getElementById('fBranch').value;
+            let bp = document.getElementById('fBp').value;
+            let majelis = document.getElementById('fMajelis').value;
+            let statusBll = document.getElementById('fStatusBll').value;
             let search = document.getElementById('fSearchMitra').value.toLowerCase();
 
             let filtered = datasetBLL.filter(item => {
+                let matchBranch = !branch || item.Branch === branch;
                 let matchBp = !bp || item['Bp Name'] === bp;
+                let matchMajelis = !majelis || item['Majelis Name'] === majelis;
+                
                 let isSudahBll = item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran';
                 let itemStatusCat = isSudahBll ? 'SUDAH BLL' : 'BELUM BLL';
                 let matchStatus = !statusBll || itemStatusCat === statusBll;
                 let matchSearch = !search || String(item['Mitra Name']).toLowerCase().includes(search);
-                return matchBp && matchStatus && matchSearch;
+                
+                return matchBranch && matchBp && matchMajelis && matchStatus && matchSearch;
             });
 
             document.getElementById('countMitraBadge').innerText = filtered.length;
@@ -293,12 +344,12 @@
         function renderMobileCards(data) {
             let container = document.getElementById('listMitraContainer');
             if(data.length === 0) {
-                container.innerHTML = `<div class="text-center text-muted mt-5"><i class="fas fa-box-open fs-1 mb-2"></i><br>Tidak ada data mitra</div>`;
+                container.innerHTML = `<div class="text-center text-muted mt-5 py-5"><i class="fas fa-box-open fs-1 mb-2"></i><br>Tidak ada data mitra</div>`;
                 return;
             }
 
             let htmlBuffer = [];
-            let renderLimit = Math.min(data.length, 150); // Maks 150 card agar HP tidak lag
+            let renderLimit = Math.min(data.length, 150);
 
             for (let i = 0; i < renderLimit; i++) {
                 let item = data[i];
@@ -316,7 +367,7 @@
                             <span class="badge ${badgeBg} badge-status">${statusLabel}</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                            <div class="small fw-bold text-primary">Rp ${Number(item['Nominal Angsuran'] || 0).toLocaleString()}</div>
+                            <div class="small fw-bold text-primary">Angsuran: Rp ${Number(item['Nominal Angsuran'] || 0).toLocaleString()}</div>
                             <div class="small text-muted"><i class="fas fa-user-tie"></i> ${item['Bp Name']}</div>
                         </div>
                     </div>
@@ -332,7 +383,7 @@
             currentAngsuranWajib = Number(item['Nominal Angsuran'] || 0);
             document.getElementById('modalLoanId').value = item['Loan Id'];
             document.getElementById('modalNamaMitra').innerText = item['Mitra Name'];
-            document.getElementById('modalInfoMajelis').innerText = item['Majelis Name'];
+            document.getElementById('modalInfoMajelis').innerText = `Branch: ${item.Branch} | BP: ${item['Bp Name']} | Majelis: ${item['Majelis Name']}`;
             document.getElementById('modalAngsuranWajib').innerText = `Rp ${Number(currentAngsuranWajib).toLocaleString()}`;
             
             document.getElementById('modalIdentifikasi').value = item['Identifikasi Mitra'] || '';
@@ -340,29 +391,41 @@
             document.getElementById('modalNominalBayar').value = item['Nominal Bayar'] ? Number(item['Nominal Bayar']).toLocaleString() : '';
             document.getElementById('modalStatusPembayaran').value = item['Status Pembayaran'] || 'Belum Bayar';
             document.getElementById('modalJanjiBayar').value = item['Janji Bayar'] || '';
+            document.getElementById('modalKeterangan').value = item['Keterangan'] || '';
             document.getElementById('modalFoto').value = '';
 
             toggleJanjiBayar();
             new bootstrap.Modal(document.getElementById('verifModal')).show();
         }
 
-        // Logic Hitung Otomatis dan Save sama seperti versi sebelumnya
+        // AKUMULASI OTOMATIS: Jika bayar >= angsuran wajib, status aman jadi 1 Angsuran (Sudah BLL)
         function hitungOtomatisStatus(input) {
             let val = input.value.replace(/[^,\d]/g, '');
             input.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             let nominal = val ? Number(val) : 0;
             let st = document.getElementById('modalStatusPembayaran');
             
-            if (nominal <= 0) st.value = "Belum Bayar";
-            else if (nominal < currentAngsuranWajib) st.value = "Sebagian Nyicil";
-            else if (nominal >= currentAngsuranWajib && nominal < (currentAngsuranWajib*2)) st.value = "1 Angsuran";
-            else st.value = "Dua Angsuran";
+            if (nominal <= 0) {
+                st.value = "Belum Bayar";
+            } else if (nominal < currentAngsuranWajib) {
+                st.value = "Sebagian Nyicil";
+            } else if (nominal >= currentAngsuranWajib && nominal < (currentAngsuranWajib * 2)) {
+                st.value = "1 Angsuran"; // Otomatis aman / Sudah BLL
+            } else {
+                st.value = "Dua Angsuran"; // Otomatis aman / Sudah BLL
+            }
             toggleJanjiBayar();
         }
 
         function toggleJanjiBayar() {
-            document.getElementById('containerJanjiBayar').style.display = 
-                (document.getElementById('modalStatusPembayaran').value === 'Belum Bayar') ? 'block' : 'none';
+            let status = document.getElementById('modalStatusPembayaran').value;
+            let container = document.getElementById('containerJanjiBayar');
+            if (status === 'Belum Bayar') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('modalJanjiBayar').value = '';
+            }
         }
 
         function saveVerifikasi() {
@@ -374,15 +437,19 @@
                 bertemuMitra: document.getElementById('modalBertemu').value,
                 statusPembayaran: document.getElementById('modalStatusPembayaran').value,
                 janjiBayar: document.getElementById('modalJanjiBayar').value,
-                nominalBayar: document.getElementById('modalNominalBayar').value.replace(/\./g, '')
+                nominalBayar: document.getElementById('modalNominalBayar').value.replace(/\./g, ''),
+                keterangan: document.getElementById('modalKeterangan').value
             };
 
             // Update Local Database Instan
             let item = datasetBLL.find(i => String(i['Loan Id']) === String(loanId));
             if(item) {
                 item['Identifikasi Mitra'] = payload.identifikasiMitra;
+                item['Bertemu Mitra'] = payload.bertemuMitra;
                 item['Status Pembayaran'] = payload.statusPembayaran;
+                item['Janji Bayar'] = payload.janjiBayar;
                 item['Nominal Bayar'] = Number(payload.nominalBayar) || 0;
+                item['Keterangan'] = payload.keterangan;
             }
             localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL));
 
@@ -390,6 +457,7 @@
                 let reader = new FileReader();
                 reader.onload = function(e) {
                     payload.imagebase64 = e.target.result;
+                    payload.imageType = fileInput.files[0].type;
                     processSaveAction(payload);
                 };
                 reader.readAsDataURL(fileInput.files[0]);
@@ -406,7 +474,7 @@
             let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
             queue.push(payload);
             localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
-            syncPendingData(); // Trigger background sync
+            syncPendingData();
         }
 
         function syncPendingData() {
@@ -416,21 +484,98 @@
 
             let p = queue.shift();
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(p) })
+                .then(res => res.json())
                 .then(() => {
                     localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
                     if(queue.length > 0) syncPendingData();
-                }).catch(err => console.log("Menunggu jaringan stabil..."));
+                }).catch(err => console.log("Menunggu sinkronisasi jaringan..."));
         }
 
         function renderAnalytics() {
             let total = datasetBLL.length;
             let sudahBll = datasetBLL.filter(i => i['Status Pembayaran'] === '1 Angsuran' || i['Status Pembayaran'] === 'Dua Angsuran').length;
             let parsial = datasetBLL.filter(i => i['Status Pembayaran'] === 'Sebagian Nyicil').length;
+            let belumBll = total - sudahBll - parsial;
 
             document.getElementById('statTotalMitra').innerText = total;
             document.getElementById('statSudahBll').innerText = sudahBll;
-            document.getElementById('statBelumBll').innerText = total - sudahBll - parsial;
+            document.getElementById('statBelumBll').innerText = belumBll;
             document.getElementById('statParsial').innerText = parsial;
+
+            // 1. STATISTIK PROGRES BLL PER BP (Persentase)
+            let bpStats = {};
+            datasetBLL.forEach(item => {
+                let bp = item['Bp Name'] || 'Lainnya';
+                if(!bpStats[bp]) bpStats[bp] = { total: 0, sudah: 0 };
+                bpStats[bp].total++;
+                if(item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran') {
+                    bpStats[bp].sudah++;
+                }
+            });
+
+            let bpBuffer = [];
+            for(let bp in bpStats) {
+                let st = bpStats[bp];
+                let pct = st.total > 0 ? ((st.sudah / st.total) * 100).toFixed(1) : 0;
+                bpBuffer.push(`
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold small text-dark">${bp}</span>
+                            <span class="small fw-bold text-success">${st.sudah}/${st.total} (${pct}%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `);
+            }
+            document.getElementById('listBpAnalytics').innerHTML = bpBuffer.join('') || '<div class="text-muted small">Tidak ada data BP</div>';
+
+            // 2. STATISTIK PROGRES MAJELIS (Dua Bar: Sudah BLL & Belum BLL)
+            let majelisStats = {};
+            datasetBLL.forEach(item => {
+                let majelis = item['Majelis Name'] || 'Lainnya';
+                if(!majelisStats[majelis]) majelisStats[majelis] = { total: 0, sudah: 0, belum: 0 };
+                majelisStats[majelis].total++;
+                let isSudah = (item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran');
+                if(isSudah) {
+                    majelisStats[majelis].sudah++;
+                } else {
+                    majelisStats[majelis].belum++;
+                }
+            });
+
+            let majelisBuffer = [];
+            for(let majelis in majelisStats) {
+                let st = majelisStats[majelis];
+                let pctSudah = st.total > 0 ? ((st.sudah / st.total) * 100).toFixed(1) : 0;
+                let pctBelum = st.total > 0 ? ((st.belum / st.total) * 100).toFixed(1) : 0;
+
+                majelisBuffer.push(`
+                    <div class="stat-card">
+                        <div class="fw-bold small text-dark text-truncate mb-2" title="${majelis}"><i class="fas fa-users text-primary me-1"></i> ${majelis}</div>
+                        
+                        <!-- Bar 1: Sudah BLL -->
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Sudah BLL (${st.sudah})</span>
+                            <span class="fw-bold text-success">${pctSudah}%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: ${pctSudah}%"></div>
+                        </div>
+
+                        <!-- Bar 2: Belum BLL -->
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Belum BLL (${st.belum})</span>
+                            <span class="fw-bold text-warning">${pctBelum}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-warning" style="width: ${pctBelum}%"></div>
+                        </div>
+                    </div>
+                `);
+            }
+            document.getElementById('listMajelisAnalytics').innerHTML = majelisBuffer.join('') || '<div class="text-muted small">Tidak ada data Majelis</div>';
         }
     </script>
 </body>
