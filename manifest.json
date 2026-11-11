@@ -1,10 +1,10 @@
 {
-  "name": "BLL Tracking Barito 2027",
-  "short_name": "BLL Mobile",
+  "name": "BLL Mobile Barito",
+  "short_name": "BLL Barito",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#1e293b",
+  "background_color": "#f4f6f9",
+  "theme_color": "#0d6efd",
   "orientation": "portrait",
   "icons": [
     {
