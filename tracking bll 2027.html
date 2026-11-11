@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLL Mobile - Tracking Lapangan</title>
+    
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-bg: #1e293b;
+            --card-radius: 12px;
+        }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Sidebar Styling */
+        .sidebar { background: var(--sidebar-bg); color: #fff; min-height: 100vh; position: fixed; width: 260px; z-index: 100; transition: all 0.3s; }
+        .sidebar .brand { padding: 20px; font-size: 1.1rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; margin: 4px 12px; border-radius: 8px; font-weight: 500; transition: all 0.2s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--primary-color); color: #fff; }
+        .sidebar .nav-link i { width: 25px; }
+
+        /* Main Content Styling */
+        .main-content { margin-left: 260px; padding: 30px; }
+        .card-stat { border: none; border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card-custom { border: none; border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); background: #fff; }
+        .table-container { background: #fff; border-radius: var(--card-radius); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: relative; min-height: auto; }
+            .main-content { margin-left: 0; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar d-flex flex-column">
+        <div class="brand d-flex align-items-center">
+            <i class="fas fa-chart-line text-primary me-2"></i> BLL Tracking Barito
+        </div>
+        <div class="p-3 text-muted small pb-0">AREA: BARITO (OFFLINE READY)</div>
+        
+        <!-- Indikator Status Koneksi -->
+        <div class="px-3 mb-2 mt-2">
+            <span id="connectionBadge" class="badge bg-success w-100 py-2"><i class="fas fa-wifi me-1"></i> Online (Tersambung)</span>
+        </div>
+
+        <ul class="nav flex-column mt-2 flex-grow-1">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" onclick="switchPage('page1', this)">
+                    <i class="fas fa-edit"></i> Page 1: Input & Verifikasi
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" onclick="switchPage('page2', this)">
+                    <i class="fas fa-chart-pie"></i> Page 2: Analisa & Statistik
+                </a>
+            </li>
+        </ul>
+        <div class="p-3 text-center text-muted small">
+            © 2027 Amartha - Area Barito
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+
+        <!-- ================= PAGE 1: INPUT & VERIFIKASI ================= -->
+        <div id="page1" class="page-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Input & Verifikasi Data BLL</h2>
+                    <p class="text-muted mb-0">Bisa digunakan secara offline di lapangan. Data otomatis sinkron saat online.</p>
+                </div>
+                <div>
+                    <span id="offlineQueueBadge" class="badge bg-warning text-dark me-2" style="display: none;">0 Pending Sync</span>
+                    <button class="btn btn-success btn-sm shadow-sm" onclick="syncPendingData()">
+                        <i class="fas fa-sync-alt me-1"></i> Sinkronkan Sekarang
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Bar Page 1 -->
+            <div class="card card-custom p-3 mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Filter Branch (Cabang)</label>
+                        <select id="fBranch1" class="form-select form-select-sm" onchange="onBranchChange1()">
+                            <option value="">Semua Branch</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Filter Majelis</label>
+                        <select id="fMajelis1" class="form-select form-select-sm" onchange="filterDataPage1()">
+                            <option value="">Semua Majelis</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Filter BP (Petugas)</label>
+                        <select id="fBp1" class="form-select form-select-sm" onchange="filterDataPage1()">
+                            <option value="">Semua BP</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Filter Status BLL</label>
+                        <select id="fStatusBll1" class="form-select form-select-sm" onchange="filterDataPage1()">
+                            <option value="">Semua Status</option>
+                            <option value="SUDAH BLL">Sudah BLL</option>
+                            <option value="BELUM BLL">Belum BLL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                            <input type="text" id="fSearchMitra" class="form-control" placeholder="Cari nama mitra..." onkeyup="filterDataPage1()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Data Mitra -->
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Daftar Mitra & Status Verifikasi</h5>
+                    <span class="badge bg-primary" id="countMitraBadge">0 Mitra Ditemukan</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Branch</th>
+                                <th>BP</th>
+                                <th>Majelis</th>
+                                <th>Nama Mitra</th>
+                                <th>Nominal Angsuran</th>
+                                <th>Identifikasi</th>
+                                <th>Bertemu</th>
+                                <th>Status Pembayaran</th>
+                                <th>Nominal Bayar</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableMitraBody">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 2: ANALISA DATA & STATISTIK ================= -->
+        <div id="page2" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Dashboard Analisa BLL</h2>
+                    <p class="text-muted mb-0">Statistik performa pencapaian BLL (mencakup data offline lokal).</p>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="renderAnalytics()">
+                    <i class="fas fa-redo me-1"></i> Refresh Analisa
+                </button>
+            </div>
+
+            <!-- Filter Bar Page 2 -->
+            <div class="card card-custom p-3 mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Filter Branch (Cabang)</label>
+                        <select id="fBranch2" class="form-select form-select-sm" onchange="onBranchChange2()">
+                            <option value="">Semua Branch</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Filter Majelis</label>
+                        <select id="fMajelis2" class="form-select form-select-sm" onchange="renderAnalytics()">
+                            <option value="">Semua Majelis</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Filter BP (Petugas)</label>
+                        <select id="fBp2" class="form-select form-select-sm" onchange="renderAnalytics()">
+                            <option value="">Semua BP</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistik Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card card-stat bg-primary text-white p-3">
+                        <div class="small text-white-50">Total Mitra</div>
+                        <h3 id="statTotalMitra" class="fw-bold mb-0">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-stat bg-success text-white p-3">
+                        <div class="small text-white-50">Mitra Sudah BLL</div>
+                        <h3 id="statSudahBll" class="fw-bold mb-0">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-stat bg-warning text-dark p-3">
+                        <div class="small text-muted">Mitra Belum BLL</div>
+                        <h3 id="statBelumBll" class="fw-bold mb-0">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card card-stat bg-info text-white p-3">
+                        <div class="small text-white-50">Mitra Bayar Parsial (Nyicil)</div>
+                        <h3 id="statParsial" class="fw-bold mb-0">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Rekap Performa per BP & Majelis -->
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-user-tie text-primary me-2"></i>Persentase Performa per BP</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nama BP (Sesuai Branch)</th>
+                                        <th class="text-center">Total</th>
+                                        <th class="text-center">Sudah BLL</th>
+                                        <th class="text-center">Persentase</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBpAnalytics"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-map-marker-alt text-success me-2"></i>Persentase Performa per Majelis</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nama Majelis</th>
+                                        <th class="text-center">Total</th>
+                                        <th class="text-center">Sudah BLL</th>
+                                        <th class="text-center">Persentase</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableMajelisAnalytics"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Form Verifikasi Mitra -->
+    <div class="modal fade" id="verifModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content card-custom">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Verifikasi & Update BLL Mitra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formVerifMitra">
+                        <input type="hidden" id="modalLoanId">
+                        <div class="mb-3 bg-light p-3 rounded">
+                            <div class="small text-muted">Mitra Terpilih:</div>
+                            <h5 id="modalNamaMitra" class="fw-bold text-primary mb-1"></h5>
+                            <div class="small text-secondary mb-2" id="modalInfoMajelis"></div>
+                            <div class="badge bg-secondary p-2 w-100 text-start">
+                                <i class="fas fa-info-circle me-1"></i> Nominal Angsuran Wajib: <span id="modalAngsuranWajib" class="fw-bold text-warning"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Identifikasi Mitra</label>
+                            <select id="modalIdentifikasi" class="form-select form-select-sm" required>
+                                <option value="">Pilih Jenis...</option>
+                                <option value="Modal">Modal</option>
+                                <option value="GL">GL (Group Loan)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Bertemu Mitra</label>
+                            <select id="modalBertemu" class="form-select form-select-sm" required>
+                                <option value="">Pilih...</option>
+                                <option value="Ya">Ya</option>
+                                <option value="Tidak">Tidak</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nominal Bayar (Rp)</label>
+                            <input type="text" id="modalNominalBayar" class="form-control form-control-sm" placeholder="Contoh: 150000" oninput="hitungOtomatisStatus(this)">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-primary">Status Pembayaran (Otomatis)</label>
+                            <input type="text" id="modalStatusPembayaran" class="form-control form-control-sm bg-light fw-bold" readonly value="Belum Bayar">
+                        </div>
+
+                        <div class="mb-3" id="containerJanjiBayar" style="display: none;">
+                            <label class="form-label small fw-bold text-danger">Tanggal Janji Bayar</label>
+                            <input type="date" id="modalJanjiBayar" class="form-control form-control-sm">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Keterangan / Catatan</label>
+                            <textarea id="modalKeterangan" class="form-control form-control-sm" rows="2" placeholder="Catatan kondisi lapangan..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Upload Foto Bukti / Kunjungan</label>
+                            <input type="file" id="modalFoto" class="form-control form-control-sm" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveVerifikasi()">Simpan & Update Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Pendaftaran Service Worker (PWA Offline)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker terdaftar sukses'))
+                    .catch(err => console.log('Service Worker gagal terdaftar:', err));
+            });
+        }
+
+        // Link Deploy Apps Script (Sesuai Permintaan)
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0mA5GGiqeHchhRXinFJcEYaVDwtaZHAtKNb_R63XwioVLfLP8ZCjGUImNB360azp4/exec";
+        
+        let datasetBLL = [];
+        let currentEditingId = null;
+        let currentAngsuranWajib = 0;
+
+        // Cek Koneksi Online / Offline secara Real-time
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        function updateOnlineStatus() {
+            let badge = document.getElementById('connectionBadge');
+            if (navigator.onLine) {
+                badge.className = "badge bg-success w-100 py-2";
+                badge.innerHTML = '<i class="fas fa-wifi me-1"></i> Online (Tersambung)';
+                syncPendingData(); // Otomatis sync jika kembali online
+            } else {
+                badge.className = "badge bg-danger w-100 py-2";
+                badge.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Offline (Mode Lapangan)';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            updateOnlineStatus();
+            loadData();
+        });
+
+        // Load Data: Ambil dari server jika online, atau dari LocalStorage HP jika offline
+        function loadData() {
+            if (navigator.onLine) {
+                fetch(WEB_APP_URL + "?action=getData")
+                    .then(res => res.json())
+                    .then(res => {
+                        if(res.status === "success") {
+                            datasetBLL = res.data;
+                            localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL)); // Backup offline
+                            initApp();
+                        }
+                    })
+                    .catch(err => {
+                        console.warn("Gagal fetch server, memuat data dari cache offline...", err);
+                        loadFromCache();
+                    });
+            } else {
+                loadFromCache();
+            }
+        }
+
+        function loadFromCache() {
+            let cached = localStorage.getItem('bll_dataset_cache');
+            if (cached) {
+                datasetBLL = JSON.parse(cached);
+                initApp();
+                alert("Berjalan dalam Mode Offline. Menggunakan data tersimpan terakhir.");
+            } else {
+                alert("Tidak ada koneksi internet dan belum ada cache data tersimpan.");
+            }
+        }
+
+        function initApp() {
+            populateBranchDropdowns();
+            filterDataPage1();
+            renderAnalytics();
+            checkPendingQueue();
+        }
+
+        function switchPage(pageId, element) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            element.classList.add('active');
+            if(pageId === 'page2') renderAnalytics();
+        }
+
+        function populateBranchDropdowns() {
+            let branchSet = new Set();
+            datasetBLL.forEach(item => { if(item.Branch) branchSet.add(item.Branch); });
+            let html = '<option value="">Semua Branch</option>';
+            branchSet.forEach(b => html += `<option value="${b}">${b}</option>`);
+            document.getElementById('fBranch1').innerHTML = html;
+            document.getElementById('fBranch2').innerHTML = html;
+        }
+
+        function onBranchChange1() {
+            let selectedBranch = document.getElementById('fBranch1').value;
+            let filtered = selectedBranch ? datasetBLL.filter(i => i.Branch === selectedBranch) : datasetBLL;
+            let majelisSet = new Set(), bpSet = new Set();
+            filtered.forEach(item => {
+                if(item['Majelis Name']) majelisSet.add(item['Majelis Name']);
+                if(item['Bp Name']) bpSet.add(item['Bp Name']);
+            });
+
+            let mHtml = '<option value="">Semua Majelis</option>';
+            majelisSet.forEach(m => mHtml += `<option value="${m}">${m}</option>`);
+            document.getElementById('fMajelis1').innerHTML = mHtml;
+
+            let bHtml = '<option value="">Semua BP</option>';
+            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
+            document.getElementById('fBp1').innerHTML = bHtml;
+            filterDataPage1();
+        }
+
+        function onBranchChange2() {
+            let selectedBranch = document.getElementById('fBranch2').value;
+            let filtered = selectedBranch ? datasetBLL.filter(i => i.Branch === selectedBranch) : datasetBLL;
+            let majelisSet = new Set(), bpSet = new Set();
+            filtered.forEach(item => {
+                if(item['Majelis Name']) majelisSet.add(item['Majelis Name']);
+                if(item['Bp Name']) bpSet.add(item['Bp Name']);
+            });
+
+            let mHtml = '<option value="">Semua Majelis</option>';
+            majelisSet.forEach(m => mHtml += `<option value="${m}">${m}</option>`);
+            document.getElementById('fMajelis2').innerHTML = mHtml;
+
+            let bHtml = '<option value="">Semua BP</option>';
+            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
+            document.getElementById('fBp2').innerHTML = bHtml;
+            renderAnalytics();
+        }
+
+        function filterDataPage1() {
+            let branch = document.getElementById('fBranch1').value;
+            let majelis = document.getElementById('fMajelis1').value;
+            let bp = document.getElementById('fBp1').value;
+            let statusBll = document.getElementById('fStatusBll1').value;
+            let search = document.getElementById('fSearchMitra').value.toLowerCase();
+
+            let filtered = datasetBLL.filter(item => {
+                let matchBranch = !branch || item.Branch === branch;
+                let matchMajelis = !majelis || item['Majelis Name'] === majelis;
+                let matchBp = !bp || item['Bp Name'] === bp;
+                let isSudahBll = item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran';
+                let itemStatusCat = isSudahBll ? 'SUDAH BLL' : 'BELUM BLL';
+                let matchStatus = !statusBll || itemStatusCat === statusBll;
+                let matchSearch = !search || String(item['Mitra Name']).toLowerCase().includes(search);
+                return matchBranch && matchMajelis && matchBp && matchStatus && matchSearch;
+            });
+
+            renderTablePage1(filtered);
+            document.getElementById('countMitraBadge').innerText = `${filtered.length} Mitra Ditemukan`;
+        }
+
+        function renderTablePage1(data) {
+            let tbody = document.getElementById('tableMitraBody');
+            tbody.innerHTML = '';
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada data mitra yang cocok dengan kriteria.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let isSudah = item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran';
+                let badgeClass = isSudah ? 'bg-success' : (item['Status Pembayaran'] === 'Sebagian Nyicil' ? 'bg-info text-dark' : 'bg-warning text-dark');
+                let statusLabel = item['Status Pembayaran'] || 'Belum Bayar';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge bg-secondary">${item.Branch || ''}</span></td>
+                        <td class="fw-semibold">${item['Bp Name'] || ''}</td>
+                        <td class="text-truncate" style="max-width: 160px;" title="${item['Majelis Name']}">${item['Majelis Name'] || ''}</td>
+                        <td class="fw-bold text-primary">${item['Mitra Name'] || ''}</td>
+                        <td>Rp ${Number(item['Nominal Angsuran'] || 0).toLocaleString()}</td>
+                        <td><span class="badge bg-dark">${item['Identifikasi Mitra'] || '-'}</span></td>
+                        <td>${item['Bertemu Mitra'] || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
+                        <td>Rp ${Number(item['Nominal Bayar'] || 0).toLocaleString()}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-primary btn-sm px-2 py-1" onclick="openVerifModal('${item['Loan Id']}')">
+                                <i class="fas fa-edit me-1"></i> Verif
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openVerifModal(loanId) {
+            currentEditingId = loanId;
+            let item = datasetBLL.find(i => String(i['Loan Id']) === String(loanId));
+            if(!item) return;
+
+            currentAngsuranWajib = Number(item['Nominal Angsuran'] || 0);
+
+            document.getElementById('modalLoanId').value = item['Loan Id'];
+            document.getElementById('modalNamaMitra').innerText = item['Mitra Name'];
+            document.getElementById('modalInfoMajelis').innerText = `Branch: ${item.Branch} | BP: ${item['Bp Name']} | Majelis: ${item['Majelis Name']}`;
+            document.getElementById('modalAngsuranWajib').innerText = `Rp ${Number(currentAngsuranWajib).toLocaleString()}`;
+            
+            document.getElementById('modalIdentifikasi').value = item['Identifikasi Mitra'] || '';
+            document.getElementById('modalBertemu').value = item['Bertemu Mitra'] || '';
+            document.getElementById('modalNominalBayar').value = item['Nominal Bayar'] ? Number(item['Nominal Bayar']).toLocaleString() : '';
+            document.getElementById('modalStatusPembayaran').value = item['Status Pembayaran'] || 'Belum Bayar';
+            document.getElementById('modalJanjiBayar').value = item['Janji Bayar'] || '';
+            document.getElementById('modalKeterangan').value = item['Keterangan'] || '';
+            document.getElementById('modalFoto').value = '';
+
+            toggleJanjiBayar();
+            new bootstrap.Modal(document.getElementById('verifModal')).show();
+        }
+
+        // Logika Akumulasi Otomatis
+        function hitungOtomatisStatus(input) {
+            let val = input.value.replace(/[^,\d]/g, '').toString();
+            let split = val.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+            if(ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+            input.value = rupiah;
+
+            let nominalBayar = val ? Number(val) : 0;
+            let statusField = document.getElementById('modalStatusPembayaran');
+
+            if (nominalBayar <= 0) {
+                statusField.value = "Belum Bayar";
+            } else if (nominalBayar < currentAngsuranWajib) {
+                statusField.value = "Sebagian Nyicil";
+            } else if (nominalBayar >= currentAngsuranWajib && nominalBayar < (currentAngsuranWajib * 2)) {
+                statusField.value = "1 Angsuran";
+            } else {
+                statusField.value = "Dua Angsuran";
+            }
+            toggleJanjiBayar();
+        }
+
+        function toggleJanjiBayar() {
+            let status = document.getElementById('modalStatusPembayaran').value;
+            let container = document.getElementById('containerJanjiBayar');
+            container.style.display = (status === 'Belum Bayar') ? 'block' : 'none';
+        }
+
+        // SIMPAN DATA & OFFLINE QUEUE
+        function saveVerifikasi() {
+            let loanId = document.getElementById('modalLoanId').value;
+            let fileInput = document.getElementById('modalFoto');
+
+            let payload = {
+                loanId: loanId,
+                identifikasiMitra: document.getElementById('modalIdentifikasi').value,
+                bertemuMitra: document.getElementById('modalBertemu').value,
+                statusPembayaran: document.getElementById('modalStatusPembayaran').value,
+                janjiBayar: document.getElementById('modalJanjiBayar').value,
+                nominalBayar: document.getElementById('modalNominalBayar').value.replace(/\./g, ''),
+                keterangan: document.getElementById('modalKeterangan').value
+            };
+
+            // Update UI/Cache Lokal Seketika
+            let item = datasetBLL.find(i => String(i['Loan Id']) === String(loanId));
+            if(item) {
+                item['Identifikasi Mitra'] = payload.identifikasiMitra;
+                item['Bertemu Mitra'] = payload.bertemuMitra;
+                item['Status Pembayaran'] = payload.statusPembayaran;
+                item['Janji Bayar'] = payload.janjiBayar;
+                item['Nominal Bayar'] = Number(payload.nominalBayar) || 0;
+                item['Keterangan'] = payload.keterangan;
+            }
+            localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL));
+
+            if (fileInput.files && fileInput.files[0]) {
+                let file = fileInput.files[0];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    payload.imagebase64 = e.target.result;
+                    payload.imageType = file.type;
+                    processSaveAction(payload);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                processSaveAction(payload);
+            }
+        }
+
+        function processSaveAction(payload) {
+            bootstrap.Modal.getInstance(document.getElementById('verifModal')).hide();
+            filterDataPage1();
+            renderAnalytics();
+
+            if (navigator.onLine) {
+                sendDataToServer(payload);
+            } else {
+                let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
+                queue.push(payload);
+                localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
+                checkPendingQueue();
+                alert('Anda sedang OFFLINE. Data tersimpan secara lokal di HP dan akan disinkronkan otomatis saat ada sinyal.');
+            }
+        }
+
+        function sendDataToServer(payload) {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    console.log("Data tersinkronisasi ke Google Spreadsheet!");
+                }
+            })
+            .catch(err => {
+                console.warn("Koneksi terputus saat mengirim, memasukkan ke antrean offline.");
+                let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
+                queue.push(payload);
+                localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
+                checkPendingQueue();
+            });
+        }
+
+        function syncPendingData() {
+            if (!navigator.onLine) {
+                alert("Tidak ada koneksi internet. Cari sinyal terlebih dahulu.");
+                return;
+            }
+            let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
+            if (queue.length === 0) {
+                alert("Semua data sudah tersinkronisasi dengan spreadsheet.");
+                return;
+            }
+
+            // Sync berurutan
+            let p = queue.shift();
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(p) })
+                .then(res => res.json())
+                .then(res => {
+                    localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
+                    checkPendingQueue();
+                    if(queue.length > 0) {
+                        syncPendingData();
+                    } else {
+                        alert("Sinkronisasi selesai! Google Spreadsheet berhasil diperbarui.");
+                        loadData(); // Tarik data terbaru
+                    }
+                })
+                .catch(err => alert("Gagal sinkronisasi: " + err));
+        }
+
+        function checkPendingQueue() {
+            let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
+            let badge = document.getElementById('offlineQueueBadge');
+            if (queue.length > 0) {
+                badge.style.display = 'inline-block';
+                badge.innerText = `${queue.length} Pending Sync`;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderAnalytics() {
+            let branchFilter = document.getElementById('fBranch2').value;
+            let majelisFilter = document.getElementById('fMajelis2').value;
+            let bpFilter = document.getElementById('fBp2').value;
+
+            let filtered = datasetBLL.filter(item => {
+                let matchBranch = !branchFilter || item.Branch === branchFilter;
+                let matchMajelis = !majelisFilter || item['Majelis Name'] === majelisFilter;
+                let matchBp = !bpFilter || item['Bp Name'] === bpFilter;
+                return matchBranch && matchMajelis && matchBp;
+            });
+
+            let total = filtered.length;
+            let sudahBll = filtered.filter(i => i['Status Pembayaran'] === '1 Angsuran' || i['Status Pembayaran'] === 'Dua Angsuran').length;
+            let parsial = filtered.filter(i => i['Status Pembayaran'] === 'Sebagian Nyicil').length;
+            let belumBll = total - sudahBll - parsial;
+
+            document.getElementById('statTotalMitra').innerText = total;
+            document.getElementById('statSudahBll').innerText = sudahBll;
+            document.getElementById('statBelumBll').innerText = belumBll;
+            document.getElementById('statParsial').innerText = parsial;
+
+            // BP Analytics
+            let bpStats = {};
+            filtered.forEach(item => {
+                let bpKey = `${item['Bp Name']} (${item.Branch})`;
+                if(!bpStats[bpKey]) bpStats[bpKey] = { total: 0, sudah: 0 };
+                bpStats[bpKey].total++;
+                if(item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran') {
+                    bpStats[bpKey].sudah++;
+                }
+            });
+
+            let bpTableBody = document.getElementById('tableBpAnalytics');
+            bpTableBody.innerHTML = '';
+            for(let bp in bpStats) {
+                let st = bpStats[bp];
+                let pct = st.total > 0 ? ((st.sudah / st.total) * 100).toFixed(1) : 0;
+                bpTableBody.innerHTML += `
+                    <tr>
+                        <td class="fw-semibold">${bp}</td>
+                        <td class="text-center">${st.total}</td>
+                        <td class="text-center text-success fw-bold">${st.sudah}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="me-2 small">${pct}%</span>
+                                <div class="progress w-50" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Majelis Analytics
+            let majelisStats = {};
+            filtered.forEach(item => {
+                let majelis = item['Majelis Name'] || 'Lainnya';
+                if(!majelisStats[majelis]) majelisStats[majelis] = { total: 0, sudah: 0 };
+                majelisStats[majelis].total++;
+                if(item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran') {
+                    majelisStats[majelis].sudah++;
+                }
+            });
+
+            let majelisTableBody = document.getElementById('tableMajelisAnalytics');
+            majelisTableBody.innerHTML = '';
+            for(let majelis in majelisStats) {
+                let st = majelisStats[majelis];
+                let pct = st.total > 0 ? ((st.sudah / st.total) * 100).toFixed(1) : 0;
+                majelisTableBody.innerHTML += `
+                    <tr>
+                        <td class="fw-semibold text-truncate" style="max-width: 150px;" title="${majelis}">${majelis}</td>
+                        <td class="text-center">${st.total}</td>
+                        <td class="text-center text-success fw-bold">${st.sudah}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="me-2 small">${pct}%</span>
+                                <div class="progress w-50" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
