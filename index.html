@@ -24,14 +24,12 @@
         }
         body { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* Sidebar Styling */
         .sidebar { background: var(--sidebar-bg); color: #fff; min-height: 100vh; position: fixed; width: 260px; z-index: 100; transition: all 0.3s; }
         .sidebar .brand { padding: 20px; font-size: 1.1rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; margin: 4px 12px; border-radius: 8px; font-weight: 500; transition: all 0.2s; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--primary-color); color: #fff; }
         .sidebar .nav-link i { width: 25px; }
 
-        /* Main Content Styling */
         .main-content { margin-left: 260px; padding: 30px; }
         .card-stat { border: none; border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .card-custom { border: none; border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); background: #fff; }
@@ -105,15 +103,15 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Filter Majelis</label>
-                        <select id="fMajelis1" class="form-select form-select-sm" onchange="filterDataPage1()">
-                            <option value="">Semua Majelis</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
                         <label class="form-label small fw-bold">Filter BP (Petugas)</label>
                         <select id="fBp1" class="form-select form-select-sm" onchange="filterDataPage1()">
                             <option value="">Semua BP</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Filter Majelis</label>
+                        <select id="fMajelis1" class="form-select form-select-sm" onchange="filterDataPage1()">
+                            <option value="">Semua Majelis</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -185,15 +183,15 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Filter Majelis</label>
-                        <select id="fMajelis2" class="form-select form-select-sm" onchange="renderAnalytics()">
-                            <option value="">Semua Majelis</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
                         <label class="form-label small fw-bold">Filter BP (Petugas)</label>
                         <select id="fBp2" class="form-select form-select-sm" onchange="renderAnalytics()">
                             <option value="">Semua BP</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Filter Majelis</label>
+                        <select id="fMajelis2" class="form-select form-select-sm" onchange="renderAnalytics()">
+                            <option value="">Semua Majelis</option>
                         </select>
                     </div>
                 </div>
@@ -355,14 +353,13 @@
             });
         }
 
-        // Link Deploy Apps Script (Sesuai Permintaan)
+        // Link Deploy Apps Script API 
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0mA5GGiqeHchhRXinFJcEYaVDwtaZHAtKNb_R63XwioVLfLP8ZCjGUImNB360azp4/exec";
         
         let datasetBLL = [];
         let currentEditingId = null;
         let currentAngsuranWajib = 0;
 
-        // Cek Koneksi Online / Offline secara Real-time
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
 
@@ -371,7 +368,7 @@
             if (navigator.onLine) {
                 badge.className = "badge bg-success w-100 py-2";
                 badge.innerHTML = '<i class="fas fa-wifi me-1"></i> Online (Tersambung)';
-                syncPendingData(); // Otomatis sync jika kembali online
+                syncPendingData();
             } else {
                 badge.className = "badge bg-danger w-100 py-2";
                 badge.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Offline (Mode Lapangan)';
@@ -383,7 +380,6 @@
             loadData();
         });
 
-        // Load Data: Ambil dari server jika online, atau dari LocalStorage HP jika offline
         function loadData() {
             if (navigator.onLine) {
                 fetch(WEB_APP_URL + "?action=getData")
@@ -391,7 +387,7 @@
                     .then(res => {
                         if(res.status === "success") {
                             datasetBLL = res.data;
-                            localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL)); // Backup offline
+                            localStorage.setItem('bll_dataset_cache', JSON.stringify(datasetBLL)); 
                             initApp();
                         }
                     })
@@ -409,9 +405,6 @@
             if (cached) {
                 datasetBLL = JSON.parse(cached);
                 initApp();
-                alert("Berjalan dalam Mode Offline. Menggunakan data tersimpan terakhir.");
-            } else {
-                alert("Tidak ada koneksi internet dan belum ada cache data tersimpan.");
             }
         }
 
@@ -448,13 +441,14 @@
                 if(item['Bp Name']) bpSet.add(item['Bp Name']);
             });
 
+            let bHtml = '<option value="">Semua BP</option>';
+            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
+            document.getElementById('fBp1').innerHTML = bHtml;
+
             let mHtml = '<option value="">Semua Majelis</option>';
             majelisSet.forEach(m => mHtml += `<option value="${m}">${m}</option>`);
             document.getElementById('fMajelis1').innerHTML = mHtml;
 
-            let bHtml = '<option value="">Semua BP</option>';
-            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
-            document.getElementById('fBp1').innerHTML = bHtml;
             filterDataPage1();
         }
 
@@ -467,32 +461,35 @@
                 if(item['Bp Name']) bpSet.add(item['Bp Name']);
             });
 
+            let bHtml = '<option value="">Semua BP</option>';
+            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
+            document.getElementById('fBp2').innerHTML = bHtml;
+
             let mHtml = '<option value="">Semua Majelis</option>';
             majelisSet.forEach(m => mHtml += `<option value="${m}">${m}</option>`);
             document.getElementById('fMajelis2').innerHTML = mHtml;
 
-            let bHtml = '<option value="">Semua BP</option>';
-            bpSet.forEach(b => bHtml += `<option value="${b}">${b}</option>`);
-            document.getElementById('fBp2').innerHTML = bHtml;
             renderAnalytics();
         }
 
         function filterDataPage1() {
             let branch = document.getElementById('fBranch1').value;
-            let majelis = document.getElementById('fMajelis1').value;
             let bp = document.getElementById('fBp1').value;
+            let majelis = document.getElementById('fMajelis1').value;
             let statusBll = document.getElementById('fStatusBll1').value;
             let search = document.getElementById('fSearchMitra').value.toLowerCase();
 
             let filtered = datasetBLL.filter(item => {
                 let matchBranch = !branch || item.Branch === branch;
-                let matchMajelis = !majelis || item['Majelis Name'] === majelis;
                 let matchBp = !bp || item['Bp Name'] === bp;
+                let matchMajelis = !majelis || item['Majelis Name'] === majelis;
+                
                 let isSudahBll = item['Status Pembayaran'] === '1 Angsuran' || item['Status Pembayaran'] === 'Dua Angsuran';
                 let itemStatusCat = isSudahBll ? 'SUDAH BLL' : 'BELUM BLL';
                 let matchStatus = !statusBll || itemStatusCat === statusBll;
                 let matchSearch = !search || String(item['Mitra Name']).toLowerCase().includes(search);
-                return matchBranch && matchMajelis && matchBp && matchStatus && matchSearch;
+                
+                return matchBranch && matchBp && matchMajelis && matchStatus && matchSearch;
             });
 
             renderTablePage1(filtered);
@@ -557,7 +554,6 @@
             new bootstrap.Modal(document.getElementById('verifModal')).show();
         }
 
-        // Logika Akumulasi Otomatis
         function hitungOtomatisStatus(input) {
             let val = input.value.replace(/[^,\d]/g, '').toString();
             let split = val.split(',');
@@ -588,10 +584,14 @@
         function toggleJanjiBayar() {
             let status = document.getElementById('modalStatusPembayaran').value;
             let container = document.getElementById('containerJanjiBayar');
-            container.style.display = (status === 'Belum Bayar') ? 'block' : 'none';
+            if(status === 'Belum Bayar') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('modalJanjiBayar').value = '';
+            }
         }
 
-        // SIMPAN DATA & OFFLINE QUEUE
         function saveVerifikasi() {
             let loanId = document.getElementById('modalLoanId').value;
             let fileInput = document.getElementById('modalFoto');
@@ -606,7 +606,6 @@
                 keterangan: document.getElementById('modalKeterangan').value
             };
 
-            // Update UI/Cache Lokal Seketika
             let item = datasetBLL.find(i => String(i['Loan Id']) === String(loanId));
             if(item) {
                 item['Identifikasi Mitra'] = payload.identifikasiMitra;
@@ -644,7 +643,6 @@
                 queue.push(payload);
                 localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
                 checkPendingQueue();
-                alert('Anda sedang OFFLINE. Data tersimpan secara lokal di HP dan akan disinkronkan otomatis saat ada sinyal.');
             }
         }
 
@@ -656,11 +654,11 @@
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    console.log("Data tersinkronisasi ke Google Spreadsheet!");
+                    console.log("Data berhasil terupdate ke Google Spreadsheet secara instan.");
                 }
             })
             .catch(err => {
-                console.warn("Koneksi terputus saat mengirim, memasukkan ke antrean offline.");
+                console.warn("Koneksi terputus, menyimpan ke antrean offline.");
                 let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
                 queue.push(payload);
                 localStorage.setItem('bll_offline_queue', JSON.stringify(queue));
@@ -670,16 +668,15 @@
 
         function syncPendingData() {
             if (!navigator.onLine) {
-                alert("Tidak ada koneksi internet. Cari sinyal terlebih dahulu.");
+                alert("Tidak ada koneksi internet.");
                 return;
             }
             let queue = JSON.parse(localStorage.getItem('bll_offline_queue') || '[]');
             if (queue.length === 0) {
-                alert("Semua data sudah tersinkronisasi dengan spreadsheet.");
+                alert("Semua data sudah tersinkronisasi dengan baik.");
                 return;
             }
 
-            // Sync berurutan
             let p = queue.shift();
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(p) })
                 .then(res => res.json())
@@ -689,11 +686,10 @@
                     if(queue.length > 0) {
                         syncPendingData();
                     } else {
-                        alert("Sinkronisasi selesai! Google Spreadsheet berhasil diperbarui.");
-                        loadData(); // Tarik data terbaru
+                        alert("Sinkronisasi Selesai! Spreadsheet telah terupdate.");
                     }
                 })
-                .catch(err => alert("Gagal sinkronisasi: " + err));
+                .catch(err => alert("Gagal sinkronisasi jaringan: " + err));
         }
 
         function checkPendingQueue() {
@@ -709,14 +705,14 @@
 
         function renderAnalytics() {
             let branchFilter = document.getElementById('fBranch2').value;
-            let majelisFilter = document.getElementById('fMajelis2').value;
             let bpFilter = document.getElementById('fBp2').value;
+            let majelisFilter = document.getElementById('fMajelis2').value;
 
             let filtered = datasetBLL.filter(item => {
                 let matchBranch = !branchFilter || item.Branch === branchFilter;
-                let matchMajelis = !majelisFilter || item['Majelis Name'] === majelisFilter;
                 let matchBp = !bpFilter || item['Bp Name'] === bpFilter;
-                return matchBranch && matchMajelis && matchBp;
+                let matchMajelis = !majelisFilter || item['Majelis Name'] === majelisFilter;
+                return matchBranch && matchBp && matchMajelis;
             });
 
             let total = filtered.length;
@@ -729,7 +725,6 @@
             document.getElementById('statBelumBll').innerText = belumBll;
             document.getElementById('statParsial').innerText = parsial;
 
-            // BP Analytics
             let bpStats = {};
             filtered.forEach(item => {
                 let bpKey = `${item['Bp Name']} (${item.Branch})`;
@@ -762,7 +757,6 @@
                 `;
             }
 
-            // Majelis Analytics
             let majelisStats = {};
             filtered.forEach(item => {
                 let majelis = item['Majelis Name'] || 'Lainnya';
